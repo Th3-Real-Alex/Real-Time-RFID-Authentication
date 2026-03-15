@@ -1,0 +1,50 @@
+
+// ENTER YOUR SHEET ID HERE
+var ss = SpreadsheetApp.openById('1yNHPyoRZM-1ydtl1PFik4ZdhhIyTHesxhxxBORKn_dY'); 
+var sheet = ss.getSheetByName('Sheet1');
+var timezone = "Europe/Bucharest"; 
+
+function doGet(e){
+  Logger.log( JSON.stringify(e) );
+
+  if (e.parameter == 'undefined') {
+    return ContentService.createTextOutput("Received data is undefined");
+  }
+
+  // 1. Get Data from Arduino
+  var Curr_Date = new Date();
+  var Curr_Time = Utilities.formatDate(Curr_Date, timezone, 'HH:mm:ss');
+  var name = stripQuotes(e.parameter.name);
+  var accessStatus = stripQuotes(e.parameter.sts); // Reads "Granted" or "Denied"
+
+  // 2. Write to the next blank row
+  var nextRow = sheet.getLastRow() + 1;
+  sheet.getRange("A" + nextRow).setValue(Curr_Date);
+  sheet.getRange("B" + nextRow).setValue(Curr_Time);
+  sheet.getRange("C" + nextRow).setValue(name);
+
+  // 3. Apply Color Logic
+  // We select the whole row (Date, Time, Name) to color the background
+  var rowRange = sheet.getRange("A" + nextRow + ":C" + nextRow);
+
+  if (accessStatus == "Granted") {
+    // CASE: Boss OR Worker1 (Good Time)
+    // Style: Dark Green Text on Pale Green Background
+    rowRange.setBackground("#d9ead3"); // Pale Green Box
+    rowRange.setFontColor("#274e13");  // Dark Green Text (Readable)
+    rowRange.setFontWeight("bold");
+  } 
+  else {
+    // CASE: Worker1 (Bad Time) OR Unknown User
+    // Style: Dark Red Text on Pale Red Background
+    rowRange.setBackground("#f4cccc"); // Pale Red Box
+    rowRange.setFontColor("#cc0000");  // Dark Red Text (Readable)
+    rowRange.setFontWeight("bold");
+  }
+
+  return ContentService.createTextOutput("Attendance recorded.");
+}
+
+function stripQuotes( value ) {
+  return value.toString().replace(/^["']|['"]$/g, "");
+}
